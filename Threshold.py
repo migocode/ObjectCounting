@@ -3,6 +3,12 @@ class Point:
         self.x = x
         self.y = y
 
+    def __str__(self):
+        return f"{self.x}, {self.y}"
+
+    def get_tuple(self) -> (int, int):
+        return self.x, self.y
+
 
 class Vector2d:
     def __init__(self, x: int, y: int):
@@ -23,7 +29,7 @@ class TrackedObject:
         self.point = point
         self.age = 0
 
-    def update_age(self):
+    def increment_age(self):
         self.age += 1
 
 
@@ -33,7 +39,7 @@ class Threshold:
         self.max_age = max_age
         self.outside_direction: int = outside_direction / abs(outside_direction) if outside_direction != 0 else 1
 
-        self.prior_objects: dict[int, TrackedObject] = {}
+        self.tracked_objects: dict[int, TrackedObject] = {}
 
     @staticmethod
     def get_box_center(xy, wh) -> Point:
@@ -49,25 +55,20 @@ class Threshold:
     def __cross_product(vector1: Vector2d, vector2: Vector2d) -> int:
         return vector1.x * vector2.y - vector1.y * vector2.x
 
-    def check_threshold(self, identifier: int, classification_id: int, current_object_center: Point) -> bool:
-        last_object_tracking: TrackedObject = self.prior_objects.get(identifier)
+    def check_threshold(self, identifier: int, classification_id: int, current_object_center: Point) -> (bool, int, Point, Point):
+        tracked_object: TrackedObject = self.tracked_objects.get(identifier)
 
-        if last_object_tracking is None:
-            self.prior_objects[identifier] = TrackedObject(identifier, classification_id, current_object_center)
-            return False
+        if tracked_object is None:
+            self.tracked_objects[identifier] = TrackedObject(identifier, classification_id, current_object_center)
+            return False, 0, None, current_object_center
 
-        path_of_object = Line(last_object_tracking.point, current_object_center)
+        path_of_object = Line(tracked_object.point, current_object_center)
 
         direction_factor = self.__is_outside(current_object_center)
         has_crossed = self.__intersect(self.threshold, path_of_object)
 
-        if has_crossed:
-            print(f"has crossed: {has_crossed} NOW!!!!!!!!!!!!!!!!")
-
-        print(f"direction: {direction_factor}")
-        print(f"has crossed: {has_crossed}")
-
-        self.__check_age(identifier)
+        tracked_object.point = current_object_center
+        return has_crossed, direction_factor, tracked_object.point, current_object_center
 
     # Source: https://www.geeksforgeeks.org/direction-point-line-segment/
     def __is_outside(self, point: Point) -> int:
@@ -106,12 +107,15 @@ class Threshold:
         else:
             return False
 
-    def __check_age(self, identifier: int):
-        tracked_object = self.prior_objects.get(identifier)
-        if tracked_object is not None and tracked_object.age > self.max_age:
-            self.prior_objects.pop(tracked_object.identifier)
-
     def __remove_identifier(self, identifier):
-        if identifier in self.prior_objects:
-            self.prior_objects.pop(identifier)
+        if identifier in self.tracked_objects:
+            self.tracked_objects.pop(identifier)
 
+    def increment_ages(self):
+        for identifier in list(self.tracked_objects):
+            tracked_object = self.tracked_objects.get(identifier)
+            if tracked_object.age > self.max_age:
+                self.tracked_objects.pop(identifier)
+                continue
+
+            tracked_object.increment_age()

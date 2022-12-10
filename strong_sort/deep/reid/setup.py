@@ -35,7 +35,7 @@ ext_modules = [
 ]
 
 
-def get_requirements(filename='requirements.txt'):
+def get_requirements(filename='requirements_backup.txt'):
     here = osp.dirname(osp.realpath(__file__))
     with open(osp.join(here, filename), 'r') as f:
         requires = [line.replace('\n', '') for line in f.readlines()]

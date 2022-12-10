@@ -1,5 +1,6 @@
 from numpy import random
 import cv2
+from Threshold import Point
 
 
 class OverlayPlotter:
@@ -29,5 +30,5 @@ class OverlayPlotter:
         cv2.putText(img, label, (c1[0], c1[1] - 2), 0, self.line_thickness / 3, [225, 255, 255],
                     thickness=font_thickness, lineType=cv2.LINE_AA)
 
-    def plot_threshold(self, start_point, end_point, img, color=(0, 69, 255)):
+    def plot_path(self, start_point: (int, int), end_point: (int, int), img, color=(0, 69, 255)):
         cv2.line(img, start_point, end_point, color, self.line_thickness)

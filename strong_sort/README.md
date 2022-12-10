@@ -41,11 +41,11 @@ However in original code, the CNN model is implemented with tensorflow, which I'
 ## Quick Start
 0. Check all dependencies installed
 ```bash
-pip install -r requirements.txt
+pip install -r requirements_backup.txt
 ```
 for user in china, you can specify pypi source to accelerate install like:
 ```bash
-pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install -r requirements_backup.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 1. Clone this repository

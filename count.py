@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 import torch
 import torch.backends.cudnn as cudnn
+import numpy as np
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # yolov5 strongsort root directory
@@ -167,8 +168,8 @@ def run(
             p, im0, _ = path[source_index], im0s[source_index].copy(), dataset.count
             p = Path(p)  # to Path
 
-            overlay_plotter.plot_threshold((threshold_start.x, threshold_start.y),
-                                           (threshold_end.x, threshold_end.y), im0)
+            overlay_plotter.plot_path(threshold_start.get_tuple(),
+                                      threshold_end.get_tuple(), im0)
 
             curr_frames[source_index] = im0
 
@@ -200,7 +201,16 @@ def run(
                         predicted_class = output[5]
 
                         center = Threshold.get_box_center(xy, wh)
-                        threshold_list[source_index].check_threshold(id_detection, predicted_class, center)
+                        has_crossed, direction, point_from, point_to = threshold_list[source_index].check_threshold(id_detection, predicted_class, center)
+
+                        if has_crossed:
+                            print(f"Has crossed: {has_crossed}")
+                            print(f"Direction: {direction}")
+                            print(f"Threshold: {threshold_list[source_index].threshold.point_start} : {threshold_list[source_index].threshold.point_start}")
+                            if point_from is not None and point_to is not None:
+                                print(f"Tracked from point {point_from} to {point_to}")
+                                overlay_plotter.plot_path(point_from.get_tuple(), point_to.get_tuple(), im0)
+                            print("---------------------")
 
                         class_id = int(predicted_class)  # integer class
                         id_detection = int(id_detection)  # integer id
@@ -209,6 +219,7 @@ def run(
 
             else:
                 strongsort_list[source_index].increment_ages()
+                threshold_list[source_index].increment_ages()
 
             # Stream results
             if show_vid:
@@ -261,7 +272,7 @@ def parse_opt():
 
 
 def main(opt):
-    check_requirements(requirements=ROOT / 'requirements.txt', exclude=('tensorboard', 'thop'))
+    check_requirements(requirements=ROOT / 'requirements_backup.txt', exclude=('tensorboard', 'thop'))
     run(**vars(opt))
 
 
