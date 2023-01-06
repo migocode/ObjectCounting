@@ -1,10 +1,16 @@
 class Point:
     def __init__(self, x: int, y: int):
-        self.x = x
-        self.y = y
+        self.x: int = x
+        self.y: int = y
 
     def __str__(self):
         return f"{self.x}, {self.y}"
+
+    def __eq__(self, other) -> bool:
+        return self.x == other.x and self.y == other.y
+
+    def __ne__(self, other) -> bool:
+        return self.x != other.x or self.y != other.y
 
     def get_tuple(self) -> (int, int):
         return self.x, self.y
@@ -12,34 +18,20 @@ class Point:
 
 class Vector2d:
     def __init__(self, x: int, y: int):
-        self.x = x
-        self.y = y
+        self.x: int = x
+        self.y: int = y
 
 
 class Line:
     def __init__(self, point_start: Point, point_end: Point):
-        self.point_start = point_start
-        self.point_end = point_end
-
-
-class TrackedObject:
-    def __init__(self, identifier: int, classification_id: int, point: Point):
-        self.identifier = identifier
-        self.classification_id = classification_id
-        self.point = point
-        self.age = 0
-
-    def increment_age(self):
-        self.age += 1
+        self.point_start: Point = point_start
+        self.point_end: Point = point_end
 
 
 class Threshold:
-    def __init__(self, threshold_line: Line, max_age: int, outside_direction: int = 1):
+    def __init__(self, threshold_line: Line, outside_direction: int = 1):
         self.threshold: Line = threshold_line
-        self.max_age = max_age
         self.outside_direction: int = outside_direction / abs(outside_direction) if outside_direction != 0 else 1
-
-        self.tracked_objects: dict[int, TrackedObject] = {}
 
     @staticmethod
     def get_box_center(xy, wh) -> Point:
@@ -55,20 +47,14 @@ class Threshold:
     def __cross_product(vector1: Vector2d, vector2: Vector2d) -> int:
         return vector1.x * vector2.y - vector1.y * vector2.x
 
-    def check_threshold(self, identifier: int, classification_id: int, current_object_center: Point) -> (bool, int, Point, Point):
-        tracked_object: TrackedObject = self.tracked_objects.get(identifier)
+    def check(self, current_object_center: Point, tracked_object_center: Point) -> int:
+        # If no movement has occurred, nothing needs to be calculated
+        if current_object_center == tracked_object_center:
+            return 0
 
-        if tracked_object is None:
-            self.tracked_objects[identifier] = TrackedObject(identifier, classification_id, current_object_center)
-            return False, 0, None, current_object_center
-
-        path_of_object = Line(tracked_object.point, current_object_center)
-
-        direction_factor = self.__is_outside(current_object_center)
-        has_crossed = self.__intersect(self.threshold, path_of_object)
-
-        tracked_object.point = current_object_center
-        return has_crossed, direction_factor, tracked_object.point, current_object_center
+        path_of_object = Line(tracked_object_center, current_object_center)
+        has_crossed = self.__get_crossing_info(self.threshold, path_of_object)
+        return has_crossed * self.outside_direction
 
     # Source: https://www.geeksforgeeks.org/direction-point-line-segment/
     def __is_outside(self, point: Point) -> int:
@@ -76,9 +62,9 @@ class Threshold:
         # return positive or negative 1 depending on the cross product, modified by the outside direction setting
         return (direction / abs(direction) if direction != 0 else 1) * self.outside_direction
 
-    # checks if p lies on the segment p1p2
+    # checks if p lies on the segment line
     @staticmethod
-    def __lies_on_line(point: Point, line: Line):
+    def __is_within_line_bounds(point: Point, line: Line):
         return min(line.point_start.x, line.point_end.x) <= point.x <= max(line.point_start.x, line.point_end.x) \
                and min(line.point_start.y, line.point_end.y) <= point.y <= max(line.point_start.y, line.point_end.y)
 
@@ -86,36 +72,38 @@ class Threshold:
         return self.__cross_product(self.__vectorize(point1, point2), self.__vectorize(point3, point2))
 
     # https://algorithmtutor.com/Computational-Geometry/Check-if-two-line-segment-intersect/
-    def __intersect(self, threshold: Line, path: Line) -> bool:
-        direction1 = self.__direction(threshold.point_start, threshold.point_end, path.point_start)
-        direction2 = self.__direction(threshold.point_start, threshold.point_end, path.point_end)
-        direction3 = self.__direction(path.point_start, path.point_end, threshold.point_start)
-        direction4 = self.__direction(path.point_start, path.point_end, threshold.point_end)
+    # 0 if not crossed, positive or negative if crossed depending on direction of crossing
+    # (according to rules of the cross product)
+    def __get_crossing_info(self, threshold: Line, path: Line) -> int:
+        relation_threshold_to_path_start = self.__direction(threshold.point_start,
+                                                            threshold.point_end,
+                                                            path.point_start)
+        relation_threshold_to_path_end = self.__direction(threshold.point_start,
+                                                          threshold.point_end,
+                                                          path.point_end)
+        relation_path_to_threshold_start = self.__direction(path.point_start,
+                                                            path.point_end,
+                                                            threshold.point_start)
+        relation_path_to_threshold_end = self.__direction(path.point_start,
+                                                          path.point_end,
+                                                          threshold.point_end)
 
-        if ((direction1 > 0 > direction2) or (direction1 < 0 < direction2)) and \
-                ((direction3 > 0 > direction4) or (direction3 < 0 < direction4)):
-            return True
-
-        elif direction1 == 0 and self.__lies_on_line(path.point_start, threshold):
-            return True
-        elif direction2 == 0 and self.__lies_on_line(path.point_end, threshold):
-            return True
-        elif direction3 == 0 and self.__lies_on_line(threshold.point_start, path):
-            return True
-        elif direction4 == 0 and self.__lies_on_line(threshold.point_end, path):
-            return True
+        # If any direction is 0, that means the points involved in its calculation
+        # are collinear (are located on the same line)
+        if ((relation_threshold_to_path_start > 0 > relation_threshold_to_path_end)
+            or (relation_threshold_to_path_start < 0 < relation_threshold_to_path_end)) \
+                and ((relation_path_to_threshold_start > 0 > relation_path_to_threshold_end)
+                     or (relation_path_to_threshold_start < 0 < relation_path_to_threshold_end)):
+            return relation_threshold_to_path_end
+        # For the crossing to occur, the start point of the path has to be positioned ON the threshold line
+        # therefore WITHIN the threshold line boundaries (start point and end point)
+        elif relation_threshold_to_path_start == 0 and self.__is_within_line_bounds(path.point_start, threshold):
+            return relation_threshold_to_path_end
+        elif relation_threshold_to_path_end == 0 and self.__is_within_line_bounds(path.point_end, threshold):
+            return relation_threshold_to_path_end
+        elif relation_path_to_threshold_start == 0 and self.__is_within_line_bounds(threshold.point_start, path):
+            return relation_threshold_to_path_end
+        elif relation_path_to_threshold_end == 0 and self.__is_within_line_bounds(threshold.point_end, path):
+            return relation_threshold_to_path_end
         else:
-            return False
-
-    def __remove_identifier(self, identifier):
-        if identifier in self.tracked_objects:
-            self.tracked_objects.pop(identifier)
-
-    def increment_ages(self):
-        for identifier in list(self.tracked_objects):
-            tracked_object = self.tracked_objects.get(identifier)
-            if tracked_object.age > self.max_age:
-                self.tracked_objects.pop(identifier)
-                continue
-
-            tracked_object.increment_age()
+            return 0

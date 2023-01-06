@@ -494,7 +494,7 @@ def init_pretrained_weights(model, key=''):
         else:
             discarded_layers.append(k)
 
-    model_dict.update(new_state_dict)
+    model_dict.check(new_state_dict)
     model.load_state_dict(model_dict)
 
     if len(matched_layers) == 0:

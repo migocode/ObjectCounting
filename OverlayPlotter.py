@@ -4,8 +4,9 @@ from Threshold import Point
 
 
 class OverlayPlotter:
-    def __init__(self, line_thickness: int, class_names: []):
+    def __init__(self, line_thickness: int, center_thickness: int, class_names: []):
         self.line_thickness = line_thickness
+        self.center_thickness = center_thickness
         self.class_names = class_names
         self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in class_names]
 
@@ -18,7 +19,7 @@ class OverlayPlotter:
         cv2.rectangle(img, c1, c2, color, thickness=self.line_thickness, lineType=cv2.LINE_AA)
 
         # Plot center
-        cv2.circle(img, center, radius=self.line_thickness, color=color, thickness=self.line_thickness)
+        cv2.circle(img, center, radius=self.center_thickness, color=color, thickness=self.center_thickness)
 
         # Plot label
         label = f'{id_detection} {self.class_names[class_id]} {confidence_score:.2f}'

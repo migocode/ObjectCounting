@@ -241,10 +241,10 @@ class Engine(object):
         self.num_batches = len(self.train_loader)
         end = time.time()
         for self.batch_idx, data in enumerate(self.train_loader):
-            data_time.update(time.time() - end)
+            data_time.check(time.time() - end)
             loss_summary = self.forward_backward(data)
-            batch_time.update(time.time() - end)
-            losses.update(loss_summary)
+            batch_time.check(time.time() - end)
+            losses.check(loss_summary)
 
             if (self.batch_idx + 1) % print_freq == 0:
                 nb_this_epoch = self.num_batches - (self.batch_idx + 1)
@@ -366,7 +366,7 @@ class Engine(object):
                     imgs = imgs.cuda()
                 end = time.time()
                 features = self.extract_features(imgs)
-                batch_time.update(time.time() - end)
+                batch_time.check(time.time() - end)
                 features = features.cpu()
                 f_.append(features)
                 pids_.extend(pids.tolist())

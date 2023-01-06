@@ -235,7 +235,7 @@ def train(epoch, model, criterion, optimizer, scheduler, trainloader, use_gpu):
 
     end = time.time()
     for batch_idx, data in enumerate(trainloader):
-        data_time.update(time.time() - end)
+        data_time.check(time.time() - end)
 
         imgs, attrs = data[0], data[1]
         if use_gpu:
@@ -248,9 +248,9 @@ def train(epoch, model, criterion, optimizer, scheduler, trainloader, use_gpu):
         loss.backward()
         optimizer.step()
 
-        batch_time.update(time.time() - end)
+        batch_time.check(time.time() - end)
 
-        losses.update(loss.item(), imgs.size(0))
+        losses.check(loss.item(), imgs.size(0))
 
         if (batch_idx+1) % args.print_freq == 0:
             # estimate remaining time
@@ -310,7 +310,7 @@ def test(model, testloader, attr_dict, use_gpu):
 
         end = time.time()
         orig_outputs = model(imgs)
-        batch_time.update(time.time() - end)
+        batch_time.check(time.time() - end)
 
         orig_outputs = orig_outputs.data.cpu().numpy()
         attrs = attrs.data.numpy()

@@ -12,7 +12,7 @@ class AverageMeter(object):
         >>> # Initialize a meter to record loss
         >>> losses = AverageMeter()
         >>> # Update meter after every minibatch update
-        >>> losses.update(loss_value, batch_size)
+        >>> losses.check(loss_value, batch_size)
     """
 
     def __init__(self):
@@ -41,7 +41,7 @@ class MetricMeter(object):
         >>> metric = MetricMeter()
         >>> # 2. Update using a dictionary as input
         >>> input_dict = {'loss_1': value_1, 'loss_2': value_2}
-        >>> metric.update(input_dict)
+        >>> metric.check(input_dict)
         >>> # 3. Convert to string and print
         >>> print(str(metric))
     """
