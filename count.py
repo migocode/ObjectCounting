@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 import torch
 import torch.backends.cudnn as cudnn
+import numpy as np
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # yolov5 strongsort root directory
@@ -199,6 +200,7 @@ def run(
                 # draw boxes for visualization
                 if len(strongsort_output) > 0:
                     for j, (output, confidence_score) in enumerate(zip(strongsort_output, confidence_scores)):
+                        confidence_score = float(confidence_score.cpu().numpy())
 
                         bounding_box = output[:4]
                         xy = bounding_box[:2]
@@ -210,20 +212,32 @@ def run(
                         direction_metric = object_counter.check(id_detection, predicted_class, center)
 
                         # Convert direction metric to -1, 0, 1 for counting
-                        direction = 0 if direction_metric == 0 else direction_metric / direction_metric
+                        direction = direction_metric / abs(direction_metric) if direction_metric != 0 else 0
+
+                        class_id = int(predicted_class)  # integer class
+                        class_name = names[class_id]
+                        id_detection = int(id_detection)  # integer id
 
                         if direction != 0:
                             print(f"Object id: {id_detection}")
-                            print(f"Class id: {predicted_class}")
+                            print(f"Class id: {class_id}")
+                            print(f"Class name: {class_name}")
                             print(f"Direction: {direction}")
                             print(f"Tracked point {center}")
                             print("---------------------")
-                            #messageQueue.publish(id_detection, predicted_class, direction, confidence_score)
 
-                        class_id = int(predicted_class)  # integer class
-                        id_detection = int(id_detection)  # integer id
-                        overlay_plotter.plot_one_box(bounding_box, center=(center.x, center.y), img=im0, class_id=class_id,
-                                                     id_detection=id_detection, confidence_score=confidence_score)
+                            message_queue.publish(id_detection,
+                                                  class_id,
+                                                  class_name,
+                                                  direction,
+                                                  confidence_score)
+
+                        overlay_plotter.plot_one_box(bounding_box,
+                                                     center=(center.x, center.y),
+                                                     img=im0,
+                                                     class_id=class_id,
+                                                     id_detection=id_detection,
+                                                     confidence_score=confidence_score)
 
             else:
                 strongsort_list[source_index].increment_ages()
@@ -239,6 +253,7 @@ def run(
     if update:
         strip_optimizer(yolo_weights)  # update model (to fix SourceChangeWarning)
 
+    del message_queue
 
 def parse_opt():
     parser = argparse.ArgumentParser()
