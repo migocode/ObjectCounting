@@ -147,6 +147,7 @@ def run(
 
     # Message Queue
     message_queue: MessageQueue = MessageQueue("passenger_count")
+    global_train_number: str = "100"
 
     # Run tracking
     dt, seen = [0.0, 0.0, 0.0, 0.0], 0
@@ -230,6 +231,7 @@ def run(
                                                   class_id,
                                                   class_name,
                                                   direction,
+                                                  global_train_number,
                                                   confidence_score)
 
                         overlay_plotter.plot_one_box(bounding_box,
