@@ -13,6 +13,7 @@ from pathlib import Path
 import torch
 import torch.backends.cudnn as cudnn
 import uuid
+import time
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # yolov5 strongsort root directory
@@ -153,12 +154,15 @@ def run(
 
     # Run tracking
     curr_frames, prev_frames = [None] * nr_sources, [None] * nr_sources
+    fps_processing = 0
     for frame_idx, (path, im, im0s, vid_cap) in enumerate(dataset):
         im = torch.from_numpy(im).to(device)
         im = im.half() if half else im.float()  # uint8 to fp16/32
         im /= 255.0  # 0 - 255 to 0.0 - 1.0
         if len(im.shape) == 3:
             im = im[None]  # expand for batch dim
+
+        start_time = time.time()
 
         # Inference
         yolo_detections = model(im)
@@ -174,7 +178,7 @@ def run(
 
             im0 = im0s[source_index].copy()
 
-            overlay_plotter.plot_path(threshold_start.get_tuple(),
+            overlay_plotter.plot_line(threshold_start.get_tuple(),
                                       threshold_end.get_tuple(), im0)
 
             curr_frames[source_index] = im0
@@ -242,6 +246,9 @@ def run(
             else:
                 strongsort_list[source_index].increment_ages()
                 object_counter_list[source_index].increment_ages()
+
+            fps_processing = 1.0 / (time.time() - start_time)
+            overlay_plotter.plot_fps(im0, fps_processing)
 
             # Stream results
             if show_vid:

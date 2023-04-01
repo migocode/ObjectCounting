@@ -31,5 +31,17 @@ class OverlayPlotter:
         cv2.putText(img, label, (c1[0], c1[1] - 2), 0, self.line_thickness / 3, [225, 255, 255],
                     thickness=font_thickness, lineType=cv2.LINE_AA)
 
-    def plot_path(self, start_point: (int, int), end_point: (int, int), img, color=(0, 69, 255)):
+    def plot_fps(self, image, fps):
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        # org
+        org = (0, 20)
+        # fontScale
+        font_scale = 0.5
+        # Blue color in BGR
+        color = (255, 255, 255)
+        # Line thickness of 2 px
+        thickness = 1
+        cv2.putText(image, str(fps), org, font, font_scale, color, thickness, cv2.LINE_AA)
+
+    def plot_line(self, start_point: (int, int), end_point: (int, int), img, color=(0, 69, 255)):
         cv2.line(img, start_point, end_point, color, self.line_thickness)
