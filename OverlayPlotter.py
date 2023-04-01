@@ -6,6 +6,10 @@ from Threshold import Point
 class OverlayPlotter:
     def __init__(self, line_thickness: int, center_thickness: int, class_names: []):
         self.line_thickness = line_thickness
+        self.threshold_count_thickness = line_thickness + 2
+        self.threshold_color = (255, 0, 0)
+        self.threshold_count_embark_color = (0, 128, 0)
+        self.threshold_count_disembark_color = (0, 0, 255)
         self.center_thickness = center_thickness
         self.class_names = class_names
         self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in class_names]
@@ -43,5 +47,16 @@ class OverlayPlotter:
         thickness = 1
         cv2.putText(image, str(fps), org, font, font_scale, color, thickness, cv2.LINE_AA)
 
-    def plot_line(self, start_point: (int, int), end_point: (int, int), img, color=(0, 69, 255)):
-        cv2.line(img, start_point, end_point, color, self.line_thickness)
+    def plot_line(self, start_point: (int, int), end_point: (int, int), img, direction=0):
+        thickness = self.line_thickness
+        color = self.threshold_color
+
+        if direction > 0:
+            thickness = self.threshold_count_thickness
+            color = self.threshold_count_embark_color
+
+        if direction < 0:
+            thickness = self.threshold_count_thickness
+            color = self.threshold_count_disembark_color
+
+        cv2.line(img, start_point, end_point, color, thickness)

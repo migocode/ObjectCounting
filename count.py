@@ -154,7 +154,7 @@ def run(
 
     # Run tracking
     curr_frames, prev_frames = [None] * nr_sources, [None] * nr_sources
-    fps_processing = 0
+    counting_occurred_frames_ago = 0
     for frame_idx, (path, im, im0s, vid_cap) in enumerate(dataset):
         im = torch.from_numpy(im).to(device)
         im = im.half() if half else im.float()  # uint8 to fp16/32
@@ -192,12 +192,12 @@ def run(
 
                 boxes_xywh = xyxy2xywh(detections[:, 0:4])
                 confidence_scores = detections[:, 4]
-                classes = detections[:, 5]
+                inferred_classes = detections[:, 5]
 
                 # Perform tracking
                 strongsort_output = strong_sort.update(boxes_xywh.cpu(),
                                                        confidence_scores.cpu(),
-                                                       classes.cpu(),
+                                                       inferred_classes.cpu(),
                                                        im0)
 
                 # draw boxes for visualization
@@ -235,6 +235,9 @@ def run(
                                                   direction,
                                                   global_train_number,
                                                   confidence_score)
+
+                            overlay_plotter.plot_line(threshold_start.get_tuple(),
+                                                      threshold_end.get_tuple(), im0, direction)
 
                         overlay_plotter.plot_one_box(bounding_box,
                                                      center=(center.x, center.y),
@@ -276,7 +279,7 @@ def run(
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--yolo-weights', nargs='+', type=str, default=WEIGHTS / 'yolov7-tiny.pt', help='model.pt path(s)')
+    parser.add_argument('--yolo-weights', nargs='+', type=str, default=WEIGHTS / 'yolov7.pt', help='model.pt path(s)')
     parser.add_argument('--strong-sort-weights', type=str, default=WEIGHTS / 'osnet_x0_25_market_256x128_amsgrad_ep180_stp80_lr0.003_b128_fb10_softmax_labelsmooth_flip.pt')
     parser.add_argument('--config-strongsort', type=str, default='strong_sort/configs/strong_sort.yaml')
     parser.add_argument('--source', type=str, default='rtsp://10.235.156.102:8554/cam', help='file/dir/URL/glob, 0 for webcam')
@@ -293,7 +296,7 @@ def parse_opt():
     parser.add_argument('--save-vid', action='store_true', default=True, help='save video tracking results')
     parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
     # class 0 is person, 1 is bycicle, 2 is car... 79 is oven
-    parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --classes 0, or --classes 0 2 3')
+    parser.add_argument('--classes', nargs='+', type=int, default=0, help='filter by class: --classes 0, or --classes 0 2 3')
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     parser.add_argument('--visualize', action='store_true', help='visualize features')
