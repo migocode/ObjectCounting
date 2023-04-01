@@ -50,7 +50,7 @@ def run(
         yolo_weights=WEIGHTS / 'yolov5m.pt',  # model.pt path(s),
         strong_sort_weights=WEIGHTS / 'osnet_x0_25_msmt17.pt',  # model.pt path,
         config_strongsort=ROOT / 'strong_sort/configs/strong_sort.yaml',
-        imgsz=[640, 360],  # inference size (height, width)
+        imgsz=[480, 640],  # inference size (height, width)
         conf_thres=0.25,  # confidence threshold
         iou_thres=0.45,  # NMS IOU threshold
         max_det=1000,  # maximum detections per image
@@ -115,8 +115,8 @@ def run(
     cfg = get_config()
     cfg.merge_from_file(opt.config_strongsort)
 
-    threshold_start = Point(0, int(360/2))
-    threshold_end = Point(640, int(360/2))
+    threshold_start = Point(0, int(imgsz[0]/2))
+    threshold_end = Point(imgsz[1], int(imgsz[0]/2))
 
     # Create as many strong sort & object counter instances as there are video sources
     strongsort_list = []
@@ -148,11 +148,10 @@ def run(
     overlay_plotter = OverlayPlotter(1, 2, names)
 
     # Message Queue
-    message_queue: MessageQueue = MessageQueue("passenger_count")
+    message_queue: MessageQueue = MessageQueue("passenger_count", "10.235.156.120")
     global_train_number: str = "100"
 
     # Run tracking
-    dt, seen = [0.0, 0.0, 0.0, 0.0], 0
     curr_frames, prev_frames = [None] * nr_sources, [None] * nr_sources
     for frame_idx, (path, im, im0s, vid_cap) in enumerate(dataset):
         im = torch.from_numpy(im).to(device)
@@ -169,13 +168,11 @@ def run(
 
         # Process detections per source (source index: source_index)
         for source_index, detections in enumerate(yolo_detections):  # detections per image
-            seen += 1
 
             strong_sort = strongsort_list[source_index]
             object_counter = object_counter_list[source_index]
 
-            p, im0, _ = path[source_index], im0s[source_index].copy(), dataset.count
-            p = Path(p)  # to Path
+            im0 = im0s[source_index].copy()
 
             overlay_plotter.plot_path(threshold_start.get_tuple(),
                                       threshold_end.get_tuple(), im0)
@@ -248,7 +245,7 @@ def run(
 
             # Stream results
             if show_vid:
-                cv2.imshow(str(p), im0)
+                cv2.imshow("capture", im0)
                 cv2.waitKey(1)  # 1 millisecond
 
             if save_vid:
@@ -258,8 +255,9 @@ def run(
                     fps = vid_cap.get(cv2.CAP_PROP_FPS)
                     w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                     h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                    path = str(video_path)
+                    path = str(video_path.absolute())
                     video_writer = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                    print("Saving video to: " + path)
                 video_writer.write(im0)
 
             prev_frames[source_index] = curr_frames[source_index]
@@ -271,12 +269,12 @@ def run(
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--yolo-weights', nargs='+', type=str, default=WEIGHTS / 'yolov7.pt', help='model.pt path(s)')
+    parser.add_argument('--yolo-weights', nargs='+', type=str, default=WEIGHTS / 'yolov7-tiny.pt', help='model.pt path(s)')
     parser.add_argument('--strong-sort-weights', type=str, default=WEIGHTS / 'osnet_x0_25_market_256x128_amsgrad_ep180_stp80_lr0.003_b128_fb10_softmax_labelsmooth_flip.pt')
     parser.add_argument('--config-strongsort', type=str, default='strong_sort/configs/strong_sort.yaml')
     parser.add_argument('--source', type=str, default='rtsp://10.235.156.102:8554/cam', help='file/dir/URL/glob, 0 for webcam')
     #parser.add_argument('--source', type=str, default='1', help='file/dir/URL/glob, 0 for webcam')
-    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640, 640], help='inference size h,w')
+    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[480, 640], help='inference size h,w')
     parser.add_argument('--conf-thres', type=float, default=0.5, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.5, help='NMS IoU threshold')
     parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')

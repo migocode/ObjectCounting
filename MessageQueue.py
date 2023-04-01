@@ -27,9 +27,9 @@ class PassengerCountMessage:
 
 
 class MessageQueue:
-    def __init__(self, queue_name: str = "passenger_count"):
+    def __init__(self, queue_name: str = "passenger_count", ip_address="localhost"):
         self.queue_name = queue_name
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters(ip_address))
         self.channel = self.connection.channel()
 
         self.channel.queue_declare(queue=self.queue_name)
