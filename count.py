@@ -178,8 +178,8 @@ def run(
 
             im0 = im0s[source_index].copy()
 
-            overlay_plotter.plot_line(threshold_start.get_tuple(),
-                                      threshold_end.get_tuple(), im0)
+            overlay_plotter.plot_threshold(threshold_start.get_tuple(),
+                                           threshold_end.get_tuple(), im0)
 
             curr_frames[source_index] = im0
 
@@ -236,8 +236,8 @@ def run(
                                                   global_train_number,
                                                   confidence_score)
 
-                            overlay_plotter.plot_line(threshold_start.get_tuple(),
-                                                      threshold_end.get_tuple(), im0, direction)
+                            overlay_plotter.plot_threshold(threshold_start.get_tuple(),
+                                                           threshold_end.get_tuple(), im0, direction)
 
                         overlay_plotter.plot_one_box(bounding_box,
                                                      center=(center.x, center.y),

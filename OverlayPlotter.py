@@ -35,7 +35,8 @@ class OverlayPlotter:
         cv2.putText(img, label, (c1[0], c1[1] - 2), 0, self.line_thickness / 3, [225, 255, 255],
                     thickness=font_thickness, lineType=cv2.LINE_AA)
 
-    def plot_fps(self, image, fps):
+    @staticmethod
+    def plot_fps(image, fps):
         font = cv2.FONT_HERSHEY_SIMPLEX
         # org
         org = (0, 20)
@@ -47,7 +48,7 @@ class OverlayPlotter:
         thickness = 1
         cv2.putText(image, str(fps), org, font, font_scale, color, thickness, cv2.LINE_AA)
 
-    def plot_line(self, start_point: (int, int), end_point: (int, int), img, direction=0):
+    def plot_threshold(self, start_point: (int, int), end_point: (int, int), img, direction=0):
         thickness = self.line_thickness
         color = self.threshold_color
 
