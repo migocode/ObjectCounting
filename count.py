@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 import torch
 import torch.backends.cudnn as cudnn
-import numpy as np
+import uuid
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # yolov5 strongsort root directory
@@ -50,7 +50,7 @@ def run(
         yolo_weights=WEIGHTS / 'yolov5m.pt',  # model.pt path(s),
         strong_sort_weights=WEIGHTS / 'osnet_x0_25_msmt17.pt',  # model.pt path,
         config_strongsort=ROOT / 'strong_sort/configs/strong_sort.yaml',
-        imgsz=[640, 640],  # inference size (height, width)
+        imgsz=[640, 360],  # inference size (height, width)
         conf_thres=0.25,  # confidence threshold
         iou_thres=0.45,  # NMS IOU threshold
         max_det=1000,  # maximum detections per image
@@ -59,7 +59,7 @@ def run(
         save_txt=False,  # save results to *.txt
         save_conf=False,  # save confidences in --save-txt labels
         save_crop=False,  # save cropped prediction boxes
-        save_vid=False,  # save confidences in --save-txt labels
+        save_vid=True,  # save confidences in --save-txt labels
         nosave=False,  # do not save images/videos
         classes=None,  # filter by class: --class 0, or --class 0 2 3
         agnostic_nms=False,  # class-agnostic NMS
@@ -107,12 +107,16 @@ def run(
         dataset = LoadImages(source, img_size=image_size, stride=stride)
         nr_sources = 1
 
+    # Save Video
+    if save_vid:
+        video_writer = None
+
     # initialize StrongSORT
     cfg = get_config()
     cfg.merge_from_file(opt.config_strongsort)
 
-    threshold_start = Point(int(640/2), 0)
-    threshold_end = Point(int(640/2), 480)
+    threshold_start = Point(0, int(360/2))
+    threshold_end = Point(640, int(360/2))
 
     # Create as many strong sort & object counter instances as there are video sources
     strongsort_list = []
@@ -141,8 +145,6 @@ def run(
             )
         )
 
-    strong_sort_outputs = [None] * nr_sources
-
     overlay_plotter = OverlayPlotter(1, 2, names)
 
     # Message Queue
@@ -170,7 +172,6 @@ def run(
             seen += 1
 
             strong_sort = strongsort_list[source_index]
-            strongsort_output = strong_sort_outputs[source_index]
             object_counter = object_counter_list[source_index]
 
             p, im0, _ = path[source_index], im0s[source_index].copy(), dataset.count
@@ -250,6 +251,17 @@ def run(
                 cv2.imshow(str(p), im0)
                 cv2.waitKey(1)  # 1 millisecond
 
+            if save_vid:
+                if not video_writer:
+                    vid_path_uuid = str(uuid.uuid4())
+                    video_path = Path("runs/count/count_video" + vid_path_uuid).with_suffix(".mp4")
+                    fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                    w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    path = str(video_path)
+                    video_writer = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                video_writer.write(im0)
+
             prev_frames[source_index] = curr_frames[source_index]
 
     if update:
@@ -273,7 +285,7 @@ def parse_opt():
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
     parser.add_argument('--save-crop', action='store_true', help='save cropped prediction boxes')
-    parser.add_argument('--save-vid', action='store_true', help='save video tracking results')
+    parser.add_argument('--save-vid', action='store_true', default=True, help='save video tracking results')
     parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
     # class 0 is person, 1 is bycicle, 2 is car... 79 is oven
     parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --classes 0, or --classes 0 2 3')

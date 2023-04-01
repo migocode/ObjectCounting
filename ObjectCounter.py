@@ -29,11 +29,12 @@ class ObjectCounter:
 
         tracked_object = self.tracked_objects.pop(identifier)
 
-        direction = self.__check_thresholds(tracked_object, current_object)
-        current_object.direction = direction
+        direction_metric = self.__check_thresholds(tracked_object, current_object)
+        current_object.direction = direction_metric
+        current_object.age = 0
 
         self.tracked_objects[identifier] = current_object
-        return direction
+        return direction_metric
 
     def __check_thresholds(self, tracked_object: TrackedObject, current_object: TrackedObject) -> int:
         # If ANY thresholds are crossed, return direction information

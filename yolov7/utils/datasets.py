@@ -268,6 +268,7 @@ class LoadStreams:  # multiple IP or RTSP cameras
         self.mode = 'stream'
         self.img_size = img_size
         self.stride = stride
+        self.cap = None
 
         if os.path.isfile(sources):
             with open(sources, 'r') as f:
@@ -301,6 +302,7 @@ class LoadStreams:  # multiple IP or RTSP cameras
         # check for common shapes
         s = np.stack([letterbox(x, self.img_size, stride=self.stride)[0].shape for x in self.imgs], 0)  # shapes
         self.rect = np.unique(s, axis=0).shape[0] == 1  # rect inference if all shapes equal
+        self.cap = cap
         if not self.rect:
             print('WARNING: Different stream shapes detected. For optimal performance supply similarly-shaped streams.')
 
@@ -337,7 +339,7 @@ class LoadStreams:  # multiple IP or RTSP cameras
         img = img[:, :, :, ::-1].transpose(0, 3, 1, 2)  # BGR to RGB, to bsx3x416x416
         img = np.ascontiguousarray(img)
 
-        return self.sources, img, img0, None
+        return self.sources, img, img0, self.cap
 
     def __len__(self):
         return 0  # 1E12 frames = 32 streams at 30 FPS for 30 years

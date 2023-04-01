@@ -53,14 +53,14 @@ class Threshold:
             return 0
 
         path_of_object = Line(tracked_object_center, current_object_center)
-        has_crossed = self.__get_crossing_info(self.threshold, path_of_object)
-        return has_crossed * self.outside_direction
+        crossing_info = self.__get_crossing_info(self.threshold, path_of_object)
+        return crossing_info * self.outside_direction
 
-    # Source: https://www.geeksforgeeks.org/direction-point-line-segment/
-    def __is_outside(self, point: Point) -> int:
-        direction = self.__direction(self.threshold.point_start, self.threshold.point_end, point)
-        # return positive or negative 1 depending on the cross product, modified by the outside direction setting
-        return (direction / abs(direction) if direction != 0 else 1) * self.outside_direction
+    # # Source: https://www.geeksforgeeks.org/direction-point-line-segment/
+    # def __is_outside(self, point: Point) -> int:
+    #     direction = self.__direction(self.threshold.point_start, self.threshold.point_end, point)
+    #     # return positive or negative 1 depending on the cross product, modified by the outside direction setting
+    #     return (direction / abs(direction) if direction != 0 else 1) * self.outside_direction
 
     # checks if p lies on the segment line
     @staticmethod
