@@ -276,9 +276,6 @@ def run(
 
             prev_frames[source_index] = curr_frames[source_index]
 
-            if frames_processed > 1012:
-                sys.exit()
-
     if update:
         strip_optimizer(yolo_weights)  # update model (to fix SourceChangeWarning)
 
