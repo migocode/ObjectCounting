@@ -154,7 +154,8 @@ def run(
 
     # Run tracking
     curr_frames, prev_frames = [None] * nr_sources, [None] * nr_sources
-    counting_occurred_frames_ago = 0
+    frames_processed = 0
+    frames_with_missed_detections = 0
     for frame_idx, (path, im, im0s, vid_cap) in enumerate(dataset):
         im = torch.from_numpy(im).to(device)
         im = im.half() if half else im.float()  # uint8 to fp16/32
@@ -249,9 +250,12 @@ def run(
             else:
                 strongsort_list[source_index].increment_ages()
                 object_counter_list[source_index].increment_ages()
+                frames_with_missed_detections += 1
 
-            fps_processing = 1.0 / (time.time() - start_time)
-            overlay_plotter.plot_fps(im0, fps_processing)
+            average_fps = 1.0 / (time.time() - start_time)
+            frames_processed += 1
+            overlay_plotter.plot_fps(im0, average_fps)
+            overlay_plotter.plot_detection_metrics(im0, frames_processed, frames_with_missed_detections)
 
             # Stream results
             if show_vid:
@@ -262,15 +266,18 @@ def run(
                 if not video_writer:
                     vid_path_uuid = str(uuid.uuid4())
                     video_path = Path("runs/count/count_video" + vid_path_uuid).with_suffix(".mp4")
-                    fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                    average_fps = vid_cap.get(cv2.CAP_PROP_FPS)
                     w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                     h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     path = str(video_path.absolute())
-                    video_writer = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                    video_writer = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*'mp4v'), average_fps, (w, h))
                     print("Saving video to: " + path)
                 video_writer.write(im0)
 
             prev_frames[source_index] = curr_frames[source_index]
+
+            if frames_processed > 1012:
+                sys.exit()
 
     if update:
         strip_optimizer(yolo_weights)  # update model (to fix SourceChangeWarning)
@@ -284,7 +291,7 @@ def parse_opt():
     parser.add_argument('--config-strongsort', type=str, default='strong_sort/configs/strong_sort.yaml')
     parser.add_argument('--source', type=str, default='rtsp://10.235.156.102:8554/cam', help='file/dir/URL/glob, 0 for webcam')
     #parser.add_argument('--source', type=str, default='1', help='file/dir/URL/glob, 0 for webcam')
-    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[480, 640], help='inference size h,w')
+    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[864, 1152], help='inference size h,w')
     parser.add_argument('--conf-thres', type=float, default=0.5, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.5, help='NMS IoU threshold')
     parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')

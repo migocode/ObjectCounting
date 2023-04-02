@@ -5,6 +5,13 @@ from Threshold import Point
 
 class OverlayPlotter:
     def __init__(self, line_thickness: int, center_thickness: int, class_names: []):
+        self.main_font = cv2.FONT_HERSHEY_SIMPLEX
+        self.metrics_font_scale = 0.5
+        self.fps_position = (0, 15)
+        self.metrics_position = (0, 30)
+        self.metrics_font_color = (255, 255, 255)
+        self.metrics_border_color = (0, 0, 0)
+        self.metrics_font_thickness = 1
         self.line_thickness = line_thickness
         self.threshold_count_thickness = line_thickness + 2
         self.threshold_color = (255, 0, 0)
@@ -35,18 +42,57 @@ class OverlayPlotter:
         cv2.putText(img, label, (c1[0], c1[1] - 2), 0, self.line_thickness / 3, [225, 255, 255],
                     thickness=font_thickness, lineType=cv2.LINE_AA)
 
-    @staticmethod
-    def plot_fps(image, fps):
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        # org
-        org = (0, 20)
-        # fontScale
-        font_scale = 0.5
-        # Blue color in BGR
-        color = (255, 255, 255)
+    def plot_fps(self, image, fps):
         # Line thickness of 2 px
         thickness = 1
-        cv2.putText(image, str(fps), org, font, font_scale, color, thickness, cv2.LINE_AA)
+        # Text boarder in black
+        cv2.putText(image, "fps: " + str(fps),
+                    self.fps_position,
+                    self.main_font,
+                    self.metrics_font_scale,
+                    self.metrics_border_color,
+                    self.metrics_font_thickness + 1,
+                    cv2.LINE_AA)
+        cv2.putText(image, "fps: " + str(fps),
+                    self.fps_position,
+                    self.main_font,
+                    self.metrics_font_scale,
+                    self.metrics_font_color,
+                    self.metrics_font_thickness,
+                    cv2.LINE_AA)
+
+    def plot_detection_metrics(self, image, frames_processed, frames_with_detection):
+        # Text boarder in black
+        cv2.putText(image, "frames processed: " + str(frames_processed),
+                    self.metrics_position,
+                    self.main_font,
+                    self.metrics_font_scale,
+                    self.metrics_border_color,
+                    self.metrics_font_thickness + 1,
+                    cv2.LINE_AA)
+        cv2.putText(image, "frames processed: " + str(frames_processed),
+                    self.metrics_position,
+                    self.main_font,
+                    self.metrics_font_scale,
+                    self.metrics_font_color,
+                    self.metrics_font_thickness,
+                    cv2.LINE_AA)
+
+        # Text boarder in black
+        cv2.putText(image, "frames missed detection: " + str(frames_with_detection),
+                    (self.metrics_position[0], self.metrics_position[1] + 15),
+                    self.main_font,
+                    self.metrics_font_scale,
+                    self.metrics_border_color,
+                    self.metrics_font_thickness + 1,
+                    cv2.LINE_AA)
+        cv2.putText(image, "frames missed detection: " + str(frames_with_detection),
+                    (self.metrics_position[0], self.metrics_position[1] + 15),
+                    self.main_font,
+                    self.metrics_font_scale,
+                    self.metrics_font_color,
+                    self.metrics_font_thickness,
+                    cv2.LINE_AA)
 
     def plot_threshold(self, start_point: (int, int), end_point: (int, int), img, direction=0):
         thickness = self.line_thickness
